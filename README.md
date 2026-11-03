@@ -2,19 +2,32 @@
 
 A product catalogue with featured products, category browsing, search, product details and email enquiries.
 
-## Run locally
+## Download the project
 
-Start Docker Desktop, then run:
+Install [Git](https://git-scm.com/downloads) if needed, then open a terminal and run:
+
+```sh
+git clone --branch feature/product-catalogue https://github.com/HARIHARA-16/product-catalogue.git
+cd product-catalogue
+```
+
+The application is on `feature/product-catalogue` while the assessment PR remains open. If you already have the project, open a terminal in its directory instead of cloning again.
+
+Choose **Docker setup** to run the app, or **native development setup** to edit it with hot reload.
+
+## Docker setup (recommended)
+
+1. Install and open [Docker Desktop](https://www.docker.com/products/docker-desktop/). Wait until its engine is running.
+2. From the project directory, start the app and enquiry inbox:
 
 ```sh
 docker compose up --build
 ```
 
-- Catalogue: http://localhost:3000
-- Enquiry inbox (Mailpit): http://localhost:8025
-- Stop: press `Ctrl+C`, then run `docker compose down`.
+3. Open the catalogue at http://localhost:3000 and enquiry inbox (Mailpit) at http://localhost:8025.
+4. To stop, press `Ctrl+C`, then run `docker compose down`.
 
-The first build needs internet. No Node installation, paid service or email credentials are required for Docker setup.
+The first build needs internet. **Do not run `nvm`, `npm install` or `npm ci` for this option:** Docker installs Node and dependencies inside the image. No paid service or email credentials are required.
 
 ### If Docker will not open
 
@@ -61,34 +74,92 @@ PRODUCT_SOURCE=fixture docker compose up --build
 
 Product images still need internet.
 
-## Development and tests
+## Native development setup (hot reload)
 
-Use **Node 24+** for native development:
+These terminal commands are for macOS/Linux. You need **Node 24+**. The app runs directly on your machine; Docker Desktop is still used below to run Mailpit for email enquiries.
+
+### Step 1: Install and select Node
+
+If you use [nvm](https://github.com/nvm-sh/nvm#installing-and-updating), install it using its official instructions if needed, reopen your terminal, and run:
+
+```sh
+nvm install 24
+nvm use 24
+node --version
+npm --version
+```
+
+`node --version` should show `v24.x.x`. Run `nvm use 24` again in each new terminal used for this project.
+
+Alternatively, install Node 24 from [nodejs.org](https://nodejs.org/en/download) and verify the versions with the last two commands. You do not need both installation methods.
+
+### Step 2: Install project dependencies
+
+From the `product-catalogue` directory:
 
 ```sh
 npm ci
-npm run check
 ```
 
-`check` runs TypeScript, ESLint, unit/API/adapter tests and a production build.
+Use **`npm ci` rather than `npm install`** for setup: it installs the exact versions in the committed lockfile. Repeat it after pulling dependency changes, not every time you start the app. Use `npm install <package>` only when intentionally adding or changing a dependency.
 
-For browser tests with real local email capture:
+### Step 3: Start the enquiry inbox
+
+Open Docker Desktop, wait for the engine, then run:
 
 ```sh
 docker compose up -d mailpit
-npx playwright install chromium
-npm run test:e2e
 ```
 
-The browser suite uses an isolated fixture-mode backend on port 3100 and tests desktop/mobile flows. Images need internet. To test a running app instead, use `BASE_URL=http://localhost:4173 npm run test:e2e`.
+Mailpit is available at http://localhost:8025, with SMTP on `localhost:1025`. No email account or SMTP password is needed.
 
-For hot reload, start Mailpit and run:
+### Step 4: Start the application
 
 ```sh
 PORT=3200 PUBLIC_ORIGIN=http://localhost:5173 npm run dev
 ```
 
-Open http://localhost:5173.
+Keep this terminal open. Visit **http://localhost:5173** for the UI. Vite forwards API requests to the Node backend on port 3200. Keep port 5173 free: if Vite selects another port, the configured browser origin will not match.
+
+Native npm commands do not load `.env` automatically; the command above supplies the port/origin settings. Browsing works without SMTP, but submitting an enquiry requires Mailpit.
+
+### Step 5: Stop development
+
+Press `Ctrl+C` in the application terminal. To stop Mailpit:
+
+```sh
+docker compose stop mailpit
+```
+
+## Run checks and browser tests
+
+Complete the Node/dependency steps above first. In a new terminal, select Node and run:
+
+```sh
+nvm use 24
+npm run check
+```
+
+Skip `nvm use 24` if you installed Node without nvm. `check` runs TypeScript, ESLint, unit/API/adapter tests and a production build; it does not need Mailpit or Docker.
+
+For browser tests, keep Docker Desktop running and use:
+
+```sh
+nvm use 24
+docker compose up -d mailpit
+npx playwright install chromium
+npm run test:e2e
+```
+
+Install Chromium once per machine (and again if the Playwright version changes). The browser suite builds the app, starts an isolated fixture-mode backend on port 3100 and tests desktop/mobile flows with real Mailpit email capture. Keep port 3100 free. Product images need internet.
+
+To test an already running Docker app instead of the isolated backend:
+
+```sh
+BASE_URL=http://localhost:3000 npm run test:e2e
+```
+
+Replace the URL with `http://localhost:4173` if you used the alternative Docker port.
 
 ## Design
 
