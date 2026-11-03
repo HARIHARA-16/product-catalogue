@@ -1,0 +1,33 @@
+services:
+  app:
+    build: .
+    init: true
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:3000}
+      PRODUCT_SOURCE: ${PRODUCT_SOURCE:-fakestore}
+      FEATURED_PRODUCT_IDS: ${FEATURED_PRODUCT_IDS:-1,5,9,16,19}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_SECURE: "false"
+      MAIL_FROM: ${MAIL_FROM:-catalogue@example.test}
+      SALES_INBOX: ${SALES_INBOX:-sales@example.test}
+    depends_on:
+      mailpit:
+        condition: service_started
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "127.0.0.1:${MAILPIT_PORT:-8025}:8025"
+      - "127.0.0.1:1025:1025"
+    environment:
+      MP_MAX_MESSAGES: 100
